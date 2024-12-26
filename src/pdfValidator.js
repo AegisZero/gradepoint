@@ -54,6 +54,8 @@ const validateRequired = (object, validationErrors, property) => {
 const validate = (formContent, validationErrors) => {
     
     let primaryClient = formContent.primary_client
+    
+    const industryOccupations = prospectValidValues.getProspectIndustryOccupations()
 
     // validate rep_id
     validateRequired(formContent, validationErrors, 'rep_id')
@@ -105,7 +107,25 @@ const validate = (formContent, validationErrors) => {
         validationErrors.push('License State code provided is not valid')
     }
 
-    // validate 
+    // validate Industry / Occupation
+    if(primaryClient.industry) {
+        let match = false
+        if(primaryClient.occupation) {
+            for(var key in industryOccupations) {
+                if(key == primaryClient.industry) {
+                    const industry = industryOccupations[key]
+                    if(industry.includes(primaryClient.occupation)) {
+                        match = true
+                    }
+                    break
+                }
+            }
+        }
+        if(match == false) {
+            validationErrors.push('Industry / Occupation combination is not valid')
+        }
+    }
+
 }
 
 module.exports = {validate}

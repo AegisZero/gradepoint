@@ -2,6 +2,8 @@
 const pdfLib = require('pdf-lib')
 const fs = require('fs')
 const moment = require('moment')
+const _ = require('lodash')
+const prospectValidValues = require('./prospectValidValues')
 
 const genderTranslation = [
     {pdfCode: 3, value: 'F'},
@@ -24,11 +26,20 @@ const taxBracketTranslation = [
     {pdfCode: 32, value: 37},
 ]
 
-const getPdfForm = async (fileLocation) => {
+// current state, just get the file from the location provided
+const getPdfFromLocation = async (fileLocation) => {
     const fileData = fs.readFileSync(fileLocation)
     const pdfDoc = await pdfLib.PDFDocument.load(fileData)
     const form = pdfDoc.getForm()
 
+    return form
+}
+
+// future state as a utility, will be calling this , rather than a location on
+// the local system
+const getPdfFromFileData = async (fileData) => {
+    const pdfDoc = await pdfLib.PDFDocument.load(fileData)
+    const form = pdfDoc.getForm()
     return form
 }
 
@@ -92,23 +103,29 @@ const reformat = (formContent) => {
     // strip dashes from SSN
     let primaryClient = formContent.primary_client
     let financialInfo = formContent.financial_information
+    const industryOccupations = prospectValidValues.getProspectIndustryOccupations()
 
     primaryClient.ssn = primaryClient.ssn.replaceAll('-','')
 
     // split name entry into first and last
     const full_name = primaryClient.full_name
-    primaryClient.first_name = full_name.split(" ")[0]
-    primaryClient.last_name = full_name.split(" ")[1]
+    primaryClient.first_name = _.startCase(_.lowerCase(full_name.split(" ")[0]))
+    primaryClient.last_name = _.startCase(_.lowerCase(full_name.split(" ")[1]))
 
     // reformat birthdate
     const birthDateDt = new Date(primaryClient.dob)
     const birthDate = moment(birthDateDt)
     primaryClient.dob = birthDate.format('MM/DD/YYYY')
 
+    //update email to lowercase
+    primaryClient.email = primaryClient.email.toLowerCase()
+
+    // Uppercase Address Line 1
+    primaryClient.address1 = _.startCase(_.lowerCase(primaryClient.address1))
     // reformat Address Line 2 into indivdual
-    primaryClient.city = primaryClient.address2.split(',')[0]
+    primaryClient.city = _.startCase(_.lowerCase(primaryClient.address2.split(',')[0]))
     const stateZip = primaryClient.address2.split(',')[1].trim()
-    primaryClient.state = stateZip.split(' ')[0].trim()
+    primaryClient.state = (stateZip.split(' ')[0].trim()).toUpperCase()
     primaryClient.zip = stateZip.split(' ')[1].trim()
 
     // strip dashes from Mobile Phone
@@ -122,7 +139,7 @@ const reformat = (formContent) => {
     // reformat annual income
     if(financialInfo.household_income){ 
 
-        financialInfo.household_income.replaceAll(',','')
+        financialInfo.household_income = financialInfo.household_income.replaceAll(',','')
 
         if(financialInfo.household_income.indexOf('K') > -1 || financialInfo.household_income.indexOf ('k') > -1){
             financialInfo.household_income = financialInfo.household_income.replace('K','').replace('k','').replace('.','').trim()
@@ -155,12 +172,41 @@ const reformat = (formContent) => {
 
     // reformat net worth
     if(financialInfo.net_worth) {
-        financialInfo.net_worth = ((financialInfo.net_worth.split('-')[1]).trim()).replace('$','').replaceAll(',','')
+        if(financialInfo.net_worth == '$1mm+'){
+            financialInfo.net_worth = 1000000
+        } else {
+            financialInfo.net_worth = ((financialInfo.net_worth.split('-')[1]).trim()).replace('$','').replaceAll(',','')
+        }
+        
     }
+
     // reformat liquid net worth
     if(financialInfo.liquid_net_worth) {
-        financialInfo.liquid_net_worth = ((financialInfo.liquid_net_worth.split('-')[1]).trim()).replace('$','').replaceAll(',','')
+        if(financialInfo.liquid_net_worth == '$1mm+'){
+            financialInfo.liquid_net_worth = 1000000
+        } else {
+            financialInfo.liquid_net_worth = ((financialInfo.liquid_net_worth.split('-')[1]).trim()).replace('$','').replaceAll(',','')
+        }
+    }
+
+    // reformat industry and occupation
+    if(primaryClient.industry) {
+        for(var key in industryOccupations) {
+            if(key.toUpperCase() == primaryClient.industry.toUpperCase()) {
+                primaryClient.industry = key
+                const industry = industryOccupations[key]
+                if(primaryClient.occupation) {
+                    for(let i = 0; i < industry.length; i++) {
+                        if(industry[i].toUpperCase() == primaryClient.occupation.toUpperCase()) {
+                            primaryClient.occupation = industry[i]
+                            break
+                        }
+                    }
+                }
+                break
+            }
+        }
     }
 }
 
-module.exports = {getPdfForm, getText, getRadioGroupSelection, getDropdownSelection, reformat, doTranslations}
+module.exports = {getPdfFromLocation, getPdfFromFileData, getText, getRadioGroupSelection, getDropdownSelection, reformat, doTranslations}

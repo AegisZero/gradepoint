@@ -1,5 +1,8 @@
 'use strict'
 
+const path = require('path')
+const xlsx = require('xlsx')
+
 const states = ['AA', 'AE', 'AK', 'AL', 'AP', 'AR', 'AZ', 'CA', 'CO', 'CT', 'DC', 
     'DE', 'FL', 'GA', 'HI', 'IA', 'ID', 'IL', 'IN', 'KS', 'KY', 'LA', 'MA', 'MD', 
     'ME', 'MI', 'MN', 'MO', 'MS', 'MT', 'NC', 'ND', 'NE', 'NH', 'NJ', 'NM', 'NV', 
@@ -22,4 +25,21 @@ const countries = ['AA', 'AC', 'AE', 'AF', 'AG', 'AJ', 'AL', 'AM', 'AN', 'AO', '
 'UP', 'UV', 'UY', 'UZ', 'VC', 'VE', 'VI', 'VM', 'VP', 'VQ', 'VT', 'WA', 'WE', 'WF', 'WI', 'WQ', 'WS', 'WZ', 'YM', 
 'YO', 'YS', 'ZA', 'ZI', 'ZZ']
 
-module.exports = {states, countries} 
+const getProspectIndustryOccupations = () => {
+    const wb = xlsx.readFile(path.join(__dirname, '../templates', 'Import_Prospect_Data_Values.xlsx'))
+    const validValueSheet = wb.Sheets['LookUp Training']
+    const returnObj = {}
+
+    for(let i = 2; i < 729; i++) {
+        
+        if(!returnObj[validValueSheet[xlsx.utils.encode_cell({c: 12, r: i})].v]) {
+            returnObj[validValueSheet[xlsx.utils.encode_cell({c: 12, r: i})].v] = []
+        }
+        returnObj[validValueSheet[xlsx.utils.encode_cell({c: 12, r: i})].v].push(validValueSheet[xlsx.utils.encode_cell({c: 13, r: i})].v)
+    }
+
+    return returnObj
+}
+
+
+module.exports = {states, countries, getProspectIndustryOccupations} 
