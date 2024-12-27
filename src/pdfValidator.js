@@ -1,6 +1,6 @@
 'use strict'
 
-const prospectValidValues = require('./prospectValidValues')
+import {states, countries, getProspectIndustryOccupations} from './prospectValidValues.js'
 
 // validate for specific length
 const validateExactLength = (object, validationErrors, property, length) => {
@@ -51,28 +51,28 @@ const validateRequired = (object, validationErrors, property) => {
 }
 
 // validate the form content
-const validate = (formContent, validationErrors) => {
+export const validate = (formContent, validationErrors) => {
     
-    let primaryClient = formContent.primary_client
+    let primaryClient = formContent.primaryClient
     
-    const industryOccupations = prospectValidValues.getProspectIndustryOccupations()
+    const industryOccupations = getProspectIndustryOccupations()
 
-    // validate rep_id
-    validateRequired(formContent, validationErrors, 'rep_id')
-    validateExactLength(formContent, validationErrors, 'rep_id', 4)
-    validateContentType(formContent, validationErrors,  'rep_id', 'alphanumeric')
+    // validate rep id
+    validateRequired(formContent, validationErrors, 'repId')
+    validateExactLength(formContent, validationErrors, 'repId', 4)
+    validateContentType(formContent, validationErrors,  'repId', 'alphanumeric')
 
     // validate SSN
     validateExactLength(primaryClient, validationErrors, 'ssn', 9)
     validateContentType(primaryClient, validationErrors, 'ssn', 'numeric')
 
     // validate Name
-    validateRequired(primaryClient, validationErrors, 'first_name')
-    validateContentType(primaryClient, validationErrors, 'first_name', 'alpha')
-    validateMaxLength(primaryClient, validationErrors, 'first_name', 30)
-    validateRequired(primaryClient, validationErrors, 'last_name')
-    validateContentType(primaryClient, validationErrors, 'last_name', 'alpha')
-    validateMaxLength(primaryClient, validationErrors, 'last_name', 30)
+    validateRequired(primaryClient, validationErrors, 'firstName')
+    validateContentType(primaryClient, validationErrors, 'firstName', 'alpha')
+    validateMaxLength(primaryClient, validationErrors, 'firstName', 30)
+    validateRequired(primaryClient, validationErrors, 'lastName')
+    validateContentType(primaryClient, validationErrors, 'lastName', 'alpha')
+    validateMaxLength(primaryClient, validationErrors, 'lastName', 30)
 
     // Address Line 1
     validateMaxLength(primaryClient, validationErrors, 'address1', 64)
@@ -81,7 +81,7 @@ const validate = (formContent, validationErrors) => {
     validateContentType(primaryClient, validationErrors, 'city', 'alpha')
 
     // vaidate State
-    if(!prospectValidValues.states.includes(primaryClient.state)){
+    if(!states.includes(primaryClient.state)){
         validationErrors.push('State code provided is not valid')
     }
 
@@ -103,7 +103,7 @@ const validate = (formContent, validationErrors) => {
     validateMaxLength(primaryClient, validationErrors, 'email', 25)
 
     // validate ID State
-    if(!prospectValidValues.states.includes(primaryClient.license_state)){
+    if(!states.includes(primaryClient.licenseState)){
         validationErrors.push('License State code provided is not valid')
     }
 
@@ -127,5 +127,3 @@ const validate = (formContent, validationErrors) => {
     }
 
 }
-
-module.exports = {validate}

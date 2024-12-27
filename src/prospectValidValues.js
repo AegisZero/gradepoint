@@ -1,15 +1,16 @@
 'use strict'
 
-const path = require('path')
-const xlsx = require('xlsx')
+import path from 'path'
+import xlsx from 'xlsx'
+const __dirname = import.meta.dirname;
 
-const states = ['AA', 'AE', 'AK', 'AL', 'AP', 'AR', 'AZ', 'CA', 'CO', 'CT', 'DC', 
+export const states = ['AA', 'AE', 'AK', 'AL', 'AP', 'AR', 'AZ', 'CA', 'CO', 'CT', 'DC', 
     'DE', 'FL', 'GA', 'HI', 'IA', 'ID', 'IL', 'IN', 'KS', 'KY', 'LA', 'MA', 'MD', 
     'ME', 'MI', 'MN', 'MO', 'MS', 'MT', 'NC', 'ND', 'NE', 'NH', 'NJ', 'NM', 'NV', 
     'NY', 'OH', 'OK', 'OR', 'PA', 'PR', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VA', 
     'VI', 'VT', 'WA', 'WI', 'WV', 'WY']
 
-const countries = ['AA', 'AC', 'AE', 'AF', 'AG', 'AJ', 'AL', 'AM', 'AN', 'AO', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AV', 'AX', 'AY', 'BA', 
+export const countries = ['AA', 'AC', 'AE', 'AF', 'AG', 'AJ', 'AL', 'AM', 'AN', 'AO', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AV', 'AX', 'AY', 'BA', 
 'BB', 'BC', 'BD', 'BE', 'BF', 'BG', 'BH', 'BK', 'BL', 'BM', 'BN', 'BO', 'BP', 'BQ', 'BR', 'BS', 'BT', 'BU', 'BV', 
 'BX', 'BY', 'CA', 'CB', 'CD', 'CE', 'CF', 'CG', 'CH', 'CI', 'CJ', 'CK', 'CM', 'CN', 'CO', 'CQ', 'CR', 'CS', 'CT', 
 'CU', 'CV', 'CW', 'CY', 'DA', 'DJ', 'DO', 'DQ', 'DR', 'EC', 'EG', 'EI', 'EK', 'EN', 'ER', 'ES', 'ET', 'EU', 'EZ', 
@@ -25,7 +26,7 @@ const countries = ['AA', 'AC', 'AE', 'AF', 'AG', 'AJ', 'AL', 'AM', 'AN', 'AO', '
 'UP', 'UV', 'UY', 'UZ', 'VC', 'VE', 'VI', 'VM', 'VP', 'VQ', 'VT', 'WA', 'WE', 'WF', 'WI', 'WQ', 'WS', 'WZ', 'YM', 
 'YO', 'YS', 'ZA', 'ZI', 'ZZ']
 
-const getProspectIndustryOccupations = () => {
+export const getProspectIndustryOccupations = () => {
     const wb = xlsx.readFile(path.join(__dirname, '../templates', 'Import_Prospect_Data_Values.xlsx'))
     const validValueSheet = wb.Sheets['LookUp Training']
     const returnObj = {}
@@ -40,6 +41,3 @@ const getProspectIndustryOccupations = () => {
 
     return returnObj
 }
-
-
-module.exports = {states, countries, getProspectIndustryOccupations} 

@@ -1,9 +1,10 @@
 'use strict'
-const pdfLib = require('pdf-lib')
-const fs = require('fs')
-const moment = require('moment')
-const _ = require('lodash')
-const prospectValidValues = require('./prospectValidValues')
+
+import {PDFDocument} from 'pdf-lib'
+import fs from 'fs'
+import moment from 'moment'
+import _ from 'lodash'
+import {getProspectIndustryOccupations} from './prospectValidValues.js'
 
 const genderTranslation = [
     {pdfCode: 3, value: 'F'},
@@ -27,9 +28,17 @@ const taxBracketTranslation = [
 ]
 
 // current state, just get the file from the location provided
-const getPdfFromLocation = async (fileLocation) => {
-    const fileData = fs.readFileSync(fileLocation)
-    const pdfDoc = await pdfLib.PDFDocument.load(fileData)
+export const getPdfForm = async (file) => {
+    
+    let fileData = null
+
+    if(typeof file == 'string') {
+        fileData = fs.readFileSync(file)
+    } else if (typeof file == 'object') {
+        fileData = file
+    }
+
+    const pdfDoc = await PDFDocument.load(fileData)
     const form = pdfDoc.getForm()
 
     return form
@@ -37,13 +46,13 @@ const getPdfFromLocation = async (fileLocation) => {
 
 // future state as a utility, will be calling this , rather than a location on
 // the local system
-const getPdfFromFileData = async (fileData) => {
-    const pdfDoc = await pdfLib.PDFDocument.load(fileData)
+export const getPdfFromFileData = async (fileData) => {
+    const pdfDoc = await PDFDocument.load(fileData)
     const form = pdfDoc.getForm()
     return form
 }
 
-const getText = (form, fieldName) => {
+export const getText = (form, fieldName) => {
     let text = ''
     try {
         const textField = form.getTextField(fieldName)
@@ -54,7 +63,7 @@ const getText = (form, fieldName) => {
     return text || null
 }
 
-const getRadioGroupSelection = (form, groupName) => {
+export const getRadioGroupSelection = (form, groupName) => {
     let selection = ''
     try {
         const group = form.getRadioGroup(groupName) 
@@ -66,7 +75,7 @@ const getRadioGroupSelection = (form, groupName) => {
     return selection || null
 }
 
-const getDropdownSelection = (form, dropdown) => {
+export const getDropdownSelection = (form, dropdown) => {
     let selection = ''
     try {
         const component = form.getDropdown(dropdown) 
@@ -78,9 +87,9 @@ const getDropdownSelection = (form, dropdown) => {
 }
 
 // translate values from the PDF values to values expected by the sheet
-const doTranslations = (formContent) => {
-    let primaryClient = formContent.primary_client
-    let financialInformation = formContent.financial_information
+export const doTranslations = (formContent) => {
+    let primaryClient = formContent.primaryClient
+    let financialInformation = formContent.financialInformation
 
     // Convert Gender from radio codes
     if(primaryClient.gender){
@@ -88,29 +97,29 @@ const doTranslations = (formContent) => {
     }
 
     // Convert Employment Status from Radio Codes
-    if(primaryClient.employment_status) {
-        primaryClient.employment_status = (employmentTranslation.find((element) => element.pdfCode = primaryClient.employment_status)).value
+    if(primaryClient.employmentStatus) {
+        primaryClient.employmentStatus = (employmentTranslation.find((element) => element.pdfCode = primaryClient.employmentStatus)).value
     }
 
     // convert Tax Bracket from Radio Codes
-    if(financialInformation.tax_bracket) {
-        financialInformation.tax_bracket = (taxBracketTranslation.find((element) => element.pdfCode == financialInformation.tax_bracket)).value
+    if(financialInformation.taxBracket) {
+        financialInformation.taxBracket = (taxBracketTranslation.find((element) => element.pdfCode == financialInformation.taxBracket)).value
     }
 }
 
 // format inputs into acceptable format for upload
-const reformat = (formContent) => {
+export const reformat = (formContent) => {
     // strip dashes from SSN
-    let primaryClient = formContent.primary_client
-    let financialInfo = formContent.financial_information
-    const industryOccupations = prospectValidValues.getProspectIndustryOccupations()
+    let primaryClient = formContent.primaryClient
+    let financialInfo = formContent.financialInformation
+    const industryOccupations = getProspectIndustryOccupations()
 
     primaryClient.ssn = primaryClient.ssn.replaceAll('-','')
 
     // split name entry into first and last
-    const full_name = primaryClient.full_name
-    primaryClient.first_name = _.startCase(_.lowerCase(full_name.split(" ")[0]))
-    primaryClient.last_name = _.startCase(_.lowerCase(full_name.split(" ")[1]))
+    const fullName = primaryClient.fullName
+    primaryClient.firstName = _.startCase(_.lowerCase(fullName.split(" ")[0]))
+    primaryClient.lastName = _.startCase(_.lowerCase(fullName.split(" ")[1]))
 
     // reformat birthdate
     const birthDateDt = new Date(primaryClient.dob)
@@ -132,23 +141,23 @@ const reformat = (formContent) => {
     primaryClient.mobile = primaryClient.mobile.replaceAll('-','')
 
     // reformat license issue date
-    const licenseIssueDt = new Date(primaryClient.license_issue_date)
+    const licenseIssueDt = new Date(primaryClient.licenseIssueDate)
     const licenseIssue = moment(licenseIssueDt)
-    primaryClient.license_issue_date = licenseIssue.format('MM/DD/YYYY')
+    primaryClient.licenseIssueDate = licenseIssue.format('MM/DD/YYYY')
 
     // reformat annual income
-    if(financialInfo.household_income){ 
+    if(financialInfo.householdIncome){ 
 
-        financialInfo.household_income = financialInfo.household_income.replaceAll(',','')
+        financialInfo.householdIncome = financialInfo.householdIncome.replaceAll(',','')
 
-        if(financialInfo.household_income.indexOf('K') > -1 || financialInfo.household_income.indexOf ('k') > -1){
-            financialInfo.household_income = financialInfo.household_income.replace('K','').replace('k','').replace('.','').trim()
-            financialInfo.household_income = (financialInfo.household_income+='000').slice(0,5)
+        if(financialInfo.householdIncome.indexOf('K') > -1 || financialInfo.householdIncome.indexOf ('k') > -1){
+            financialInfo.householdIncome = financialInfo.householdIncome.replace('K','').replace('k','').replace('.','').trim()
+            financialInfo.householdIncome = (financialInfo.householdIncome+='000').slice(0,5)
         }
         
-        if(financialInfo.household_income.indexOf('M') > -1 || financialInfo.household_income.indexOf ('m') > -1){
-            financialInfo.household_income = financialInfo.household_income.replace('M','').replace('m','').replace('.','').trim()
-            financialInfo.household_income = (financialInfo.household_income+='000000').slice(0,7)
+        if(financialInfo.householdIncome.indexOf('M') > -1 || financialInfo.householdIncome.indexOf ('m') > -1){
+            financialInfo.householdIncome = financialInfo.householdIncome.replace('M','').replace('m','').replace('.','').trim()
+            financialInfo.householdIncome = (financialInfo.householdIncome+='000000').slice(0,7)
         }
     
     }
@@ -171,21 +180,21 @@ const reformat = (formContent) => {
     }
 
     // reformat net worth
-    if(financialInfo.net_worth) {
-        if(financialInfo.net_worth == '$1mm+'){
-            financialInfo.net_worth = 1000000
+    if(financialInfo.netWorth) {
+        if(financialInfo.netWorth == '$1mm+'){
+            financialInfo.netWorth = 1000000
         } else {
-            financialInfo.net_worth = ((financialInfo.net_worth.split('-')[1]).trim()).replace('$','').replaceAll(',','')
+            financialInfo.netWorth = ((financialInfo.netWorth.split('-')[1]).trim()).replace('$','').replaceAll(',','')
         }
         
     }
 
     // reformat liquid net worth
-    if(financialInfo.liquid_net_worth) {
-        if(financialInfo.liquid_net_worth == '$1mm+'){
-            financialInfo.liquid_net_worth = 1000000
+    if(financialInfo.liquidNetWorth) {
+        if(financialInfo.liquidNetWorth == '$1mm+'){
+            financialInfo.liquidNetWorth = 1000000
         } else {
-            financialInfo.liquid_net_worth = ((financialInfo.liquid_net_worth.split('-')[1]).trim()).replace('$','').replaceAll(',','')
+            financialInfo.liquidNetWorth = ((financialInfo.liquidNetWorth.split('-')[1]).trim()).replace('$','').replaceAll(',','')
         }
     }
 
@@ -208,5 +217,3 @@ const reformat = (formContent) => {
         }
     }
 }
-
-module.exports = {getPdfFromLocation, getPdfFromFileData, getText, getRadioGroupSelection, getDropdownSelection, reformat, doTranslations}
